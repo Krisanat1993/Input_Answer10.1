@@ -74,8 +74,8 @@
             margin-bottom: 8px;
             color: #374151;
             font-size: 1.1rem;
-            white-space: pre-wrap; /* เพิ่ม: รักษารูปแบบการเว้นวรรคและขึ้นบรรทัดใหม่ */
-            word-break: break-word; /* เพิ่ม: ตัดคำถ้ายาวเกินไป */
+            white-space: pre-wrap;
+            word-break: break-word;
         }
         .dropdown select {
             width: 100%;
@@ -151,6 +151,28 @@
             background: #F9FAFB;
             color: #374151;
         }
+        /* Styles for Login Section */
+        .btn-line-login {
+            background-color: #06C755;
+            color: white;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .btn-line-login:hover {
+            background-color: #05b34c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3);
+        }
+        .btn-guest {
+            background-color: transparent;
+            color: #6B7280;
+            border: 1px solid #E5E7EB;
+            width: 100%;
+        }
+        .btn-guest:hover {
+            background-color: #F9FAFB;
+        }
+
         .problem-statement {
             border: 1px solid #E5E7EB;
             border-radius: 12px;
@@ -166,12 +188,10 @@
             color: #1F2937;
         }
         
-        /* --- เพิ่ม CSS ส่วนนี้สำหรับการจัดรูปแบบข้อความโจทย์ปัญหา --- */
         #problem-description {
-            white-space: pre-wrap; /* รักษารูปแบบการเว้นวรรคและขึ้นบรรทัดใหม่จาก Sheet */
-            word-break: break-word; /* ตัดคำถ้ายาวเกินไป */
+            white-space: pre-wrap;
+            word-break: break-word;
         }
-        /* ---------------------------------------------------- */
 
         .image-gallery {
             display: grid;
@@ -309,6 +329,18 @@
                         <p style="margin-top: 1rem; color: #6b7280;">กำลังเชื่อมต่อและโหลดข้อมูล...</p>
                     </div>
 
+                    <!-- ส่วน Login สำหรับ Desktop -->
+                    <div id="loginSection" style="display: none; text-align: center; padding: 20px 0;">
+                        <h3 style="margin-bottom: 16px;">กรุณาเข้าสู่ระบบ</h3>
+                        <p style="margin-bottom: 24px; color: #6B7280;">จำเป็นต้องเข้าสู่ระบบ LINE เพื่อยืนยันตัวตน</p>
+                        <button type="button" id="lineLoginBtn" class="btn btn-line-login">
+                            เข้าสู่ระบบด้วย LINE
+                        </button>
+                        <button type="button" id="guestLoginBtn" class="btn btn-guest" style="font-size: 0.9em;">
+                            ทดสอบระบบ (Guest Mode)
+                        </button>
+                    </div>
+
                     <div id="participantSection" style="display: none;">
                         <div class="form-group">
                             <label class="form-label" for="participant">กรุณาเลือกชื่อของคุณ</label>
@@ -390,6 +422,11 @@
             const loader = document.getElementById('loader');
             const participantSection = document.getElementById('participantSection');
             const submitButton = document.getElementById('submitButton');
+            
+            // Login Elements
+            const loginSection = document.getElementById('loginSection');
+            const lineLoginBtn = document.getElementById('lineLoginBtn');
+            const guestLoginBtn = document.getElementById('guestLoginBtn');
 
             // --- Configuration ---
             const LIFF_ID = '2008056238-g8p1R13n'; 
@@ -402,28 +439,59 @@
             let sheetData = [];
             let isLiffMode = false;
 
-            // --- Initialize LIFF (with Error Handling for Web/Preview) ---
-            try {
-                if (typeof liff !== 'undefined') {
-                    await liff.init({ liffId: LIFF_ID });
-                    if (liff.isLoggedIn()) {
-                        const profile = await liff.getProfile();
-                        lineUserId = profile.userId;
-                        isLiffMode = true;
+            // --- Initialize LIFF Logic ---
+            const initializeApp = async () => {
+                try {
+                    // Fetch Data first (Can be done in background, but keeping linear for simplicity)
+                    await fetchSheetData();
+
+                    if (typeof liff !== 'undefined') {
+                        await liff.init({ liffId: LIFF_ID });
+                        
+                        // Case 1: Already Logged In (Mobile or Desktop with session)
+                        if (liff.isLoggedIn()) {
+                            const profile = await liff.getProfile();
+                            lineUserId = profile.userId;
+                            isLiffMode = true;
+                            showParticipantSection();
+                        } 
+                        // Case 2: Not Logged In (Desktop Browser usually)
+                        else {
+                            loader.style.display = 'none';
+                            loginSection.style.display = 'block';
+                            
+                            // Setup Login Button
+                            lineLoginBtn.onclick = () => {
+                                // Important: liff.login() requires the current URL to be registered in LIFF Console
+                                if (!liff.isInClient()) {
+                                    liff.login(); 
+                                } else {
+                                    liff.login();
+                                }
+                            };
+
+                            // Setup Guest Button (For Preview environment where Redirect is tricky)
+                            guestLoginBtn.onclick = () => {
+                                lineUserId = 'GUEST-' + Math.floor(Math.random() * 100000);
+                                showParticipantSection();
+                            };
+                        }
                     } else {
-                        // Normally we login, but for preview we might skip
-                        // liff.login(); 
-                        console.log("Not logged in, using Guest Mode");
-                        lineUserId = 'GUEST-USER-' + Math.floor(Math.random() * 10000);
+                        throw new Error("LIFF SDK not loaded");
                     }
-                } else {
-                    throw new Error("LIFF SDK not loaded");
+                } catch (error) {
+                    console.warn('LIFF Init failed or Error:', error);
+                    // Fallback to Guest if LIFF completely fails
+                    lineUserId = 'WEB-ERROR-USER';
+                    showParticipantSection();
                 }
-            } catch (error) {
-                console.warn('LIFF Init failed (Running in Web Mode):', error);
-                // Fallback for web testing
-                lineUserId = 'WEB-TEST-USER';
-            }
+            };
+
+            const showParticipantSection = () => {
+                loader.style.display = 'none';
+                loginSection.style.display = 'none';
+                participantSection.style.display = 'block';
+            };
 
             // --- Helper Function for Google Drive Links ---
             function convertGoogleDriveLink(url) {
@@ -435,46 +503,41 @@
             }
 
             // --- Fetch and Process Google Sheet Data ---
-            try {
-                const response = await fetch(url);
-                const text = await response.text();
-                // Extract JSON from GViz format: /*O_o*/ google.visualization.Query.setResponse({...});
-                const jsonString = text.substring(47).slice(0, -2);
-                const json = JSON.parse(jsonString);
-                const rows = json.table.rows;
+            async function fetchSheetData() {
+                try {
+                    const response = await fetch(url);
+                    const text = await response.text();
+                    const jsonString = text.substring(47).slice(0, -2);
+                    const json = JSON.parse(jsonString);
+                    const rows = json.table.rows;
 
-                sheetData = rows.map(row => ({
-                    A: row.c[0]?.v || '', B: row.c[1]?.v || '', C: row.c[2]?.v || '', D: row.c[3]?.v || '',
-                    E: row.c[4]?.v || '', F: row.c[5]?.v || '', G: row.c[6]?.v || '', H: row.c[7]?.v || '',
-                    I: row.c[8]?.v || '', J: row.c[9]?.v || '', K: row.c[10]?.v || '', L: row.c[11]?.v || '', M: row.c[12]?.v || '', N: row.c[13]?.v || '',
-                }));
+                    sheetData = rows.map(row => ({
+                        A: row.c[0]?.v || '', B: row.c[1]?.v || '', C: row.c[2]?.v || '', D: row.c[3]?.v || '',
+                        E: row.c[4]?.v || '', F: row.c[5]?.v || '', G: row.c[6]?.v || '', H: row.c[7]?.v || '',
+                        I: row.c[8]?.v || '', J: row.c[9]?.v || '', K: row.c[10]?.v || '', L: row.c[11]?.v || '', M: row.c[12]?.v || '', N: row.c[13]?.v || '',
+                    }));
 
-                // Populate Dropdown
-                let hasOptions = false;
-                sheetData.forEach((row, index) => {
-                    if (row.A) { // Assuming Column A is the Name
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = row.A;
-                        participantDropdown.appendChild(option);
-                        hasOptions = true;
-                    }
-                });
-                
-                if (!hasOptions) {
-                    throw new Error("No participants found in sheet");
+                    // Populate Dropdown
+                    let hasOptions = false;
+                    sheetData.forEach((row, index) => {
+                        if (row.A) { 
+                            const option = document.createElement('option');
+                            option.value = index;
+                            option.textContent = row.A;
+                            participantDropdown.appendChild(option);
+                            hasOptions = true;
+                        }
+                    });
+                    
+                    if (!hasOptions) throw new Error("No participants found");
+
+                } catch (error) {
+                    console.error('Error fetching Google Sheet data:', error);
+                    loader.innerHTML = `
+                        <p style="color: #EF4444; font-weight: bold;">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+                        <button class="btn btn-back" onclick="location.reload()" style="margin-top:10px;">ลองใหม่อีกครั้ง</button>
+                    `;
                 }
-
-                loader.style.display = 'none';
-                participantSection.style.display = 'block';
-
-            } catch (error) {
-                console.error('Error fetching Google Sheet data:', error);
-                loader.innerHTML = `
-                    <p style="color: #EF4444; font-weight: bold;">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-                    <p style="font-size: 0.9em; color: #666;">กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตหรือสิทธิ์การเข้าถึง Google Sheet</p>
-                    <button class="btn btn-back" onclick="location.reload()" style="margin-top:10px;">ลองใหม่อีกครั้ง</button>
-                `;
             }
             
             // --- Update Page 2 Content ---
@@ -484,7 +547,7 @@
                 document.getElementById('problem-lesson').textContent = data.B ? `คำถามชุดที่ ${data.B}` : 'ไม่มีหัวข้อ';
                 document.getElementById('problem-description').textContent = data.C || '';
                 
-                // Handle Images safely
+                // Handle Images
                 const setupImage = (id, url, captionId, captionText, containerId) => {
                     const img = document.getElementById(id);
                     const container = document.getElementById(containerId);
@@ -516,7 +579,6 @@
                 const selectedIndex = participantDropdown.value;
                 if (selectedIndex === "") {
                     errorMessage.style.display = 'block';
-                    // Shake animation effect
                     participantDropdown.parentElement.style.animation = "shake 0.5s";
                     setTimeout(() => participantDropdown.parentElement.style.animation = "", 500);
                 } else {
@@ -574,9 +636,6 @@
                     formData.append('q4', questions.q4); formData.append('a4', answers.a4);
                     formData.append('q5', questions.q5); formData.append('a5', answers.a5);
 
-                    // Note: no-cors mode is used often with GAS but returns opaque response. 
-                    // However, your original code used standard fetch which implies your GAS handles CORS correctly.
-                    // We stick to standard fetch.
                     const response = await fetch(GAS_URL, {
                         method: 'POST',
                         body: formData,
@@ -600,7 +659,7 @@
                 const summaryMessage = `📝 สรุปผลการตอบแบบสอบถาม
 -------------------------
 ผู้ตอบ: ${participantName}
-User ID: ${lineUserId.substring(0, 5)}...
+User ID: ${lineUserId.startsWith('GUEST') ? 'Guest' : lineUserId.substring(0, 5) + '...'}
 คำถามชุดที่: ${lesson}
 -------------------------
 1. ${questions.q1}
@@ -641,6 +700,9 @@ User ID: ${lineUserId.substring(0, 5)}...
                     });
                 }
             });
+
+            // Start App
+            initializeApp();
         }
 
         document.addEventListener('DOMContentLoaded', main);
