@@ -154,6 +154,47 @@
             background: #F9FAFB;
             color: #374151;
         }
+        
+        /* New Styles for Dynamic Inputs */
+        .btn-add {
+            background-color: #F3F4F6;
+            color: #4B5563;
+            border: 2px dashed #D1D5DB;
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+        .btn-add:hover {
+            background-color: #E5E7EB;
+            border-color: #9CA3AF;
+            color: #1F2937;
+        }
+        .input-set {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .input-set:nth-child(even) {
+            background-color: #FAFAFA;
+        }
+        .sub-label {
+            font-size: 0.9rem;
+            color: #4B5563;
+            margin-bottom: 6px;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+        .main-label {
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 8px;
+            display: block;
+        }
+
         /* Styles for Login Section */
         .btn-line-login {
             background-color: #06C755;
@@ -221,21 +262,16 @@
         /* --- ปรับแต่ง Textarea ให้ใหญ่และยืดขยายได้ดีขึ้น --- */
         .textarea {
             width: 100%;
-            padding: 16px;
+            padding: 12px;
             border: 2px solid #E5E7EB;
             border-radius: 8px;
             font-size: 1rem;
             font-family: 'Sarabun', sans-serif;
             line-height: 1.6;
-            
-            /* สำคัญ: ให้ผู้ใช้ลากขยายแนวตั้งได้ */
             resize: vertical; 
-            
-            /* กำหนดความสูงเริ่มต้นให้เยอะขึ้น */
-            min-height: 200px; 
-            
+            min-height: 120px; /* Reduced slightly for multi-input forms */
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            background-color: #FAFAFA; /* สีพื้นหลังอ่อนๆ ให้ดูน่าเขียน */
+            background-color: #FAFAFA; 
         }
         .textarea:focus {
             outline: none;
@@ -410,21 +446,25 @@
                         </div>
                     </div>
                     
-                    <!-- Questions 1-3 -->
-                    <!-- เพิ่ม rows="8" เพื่อให้กล่องใหญ่ขึ้นโดย default -->
+                    <!-- Question 1 -->
                     <div class="form-group">
-                        <label id="question1-label" for="answer1" class="form-label"></label>
-                        <textarea id="answer1" class="textarea" rows="8" placeholder="กรอกคำตอบของคุณที่นี่..."></textarea>
+                        <label id="question1-label" class="form-label"></label>
+                        <div id="q1-container"></div>
+                        <button type="button" id="add-q1-btn" class="btn btn-add">+ เพิ่มคำตอบ</button>
                     </div>
                     
+                    <!-- Question 2 -->
                     <div class="form-group">
-                        <label id="question2-label" for="answer2" class="form-label"></label>
-                        <textarea id="answer2" class="textarea" rows="8" placeholder="กรอกคำตอบของคุณที่นี่..."></textarea>
+                        <label id="question2-label" class="form-label"></label>
+                        <div id="q2-container"></div>
+                        <button type="button" id="add-q2-btn" class="btn btn-add">+ เพิ่มคำตอบ</button>
                     </div>
                     
+                    <!-- Question 3 -->
                     <div class="form-group">
-                        <label id="question3-label" for="answer3" class="form-label"></label>
-                        <textarea id="answer3" class="textarea" rows="8" placeholder="กรอกคำตอบของคุณที่นี่..."></textarea>
+                        <label id="question3-label" class="form-label"></label>
+                        <div id="q3-container"></div>
+                        <button type="button" id="add-q3-btn" class="btn btn-add">+ เพิ่มคำตอบ</button>
                     </div>
 
                     <button type="submit" id="submitButton" class="btn btn-success">ส่งคำตอบ</button>
@@ -478,6 +518,78 @@
             const loginSection = document.getElementById('loginSection');
             const lineLoginBtn = document.getElementById('lineLoginBtn');
             const guestLoginBtn = document.getElementById('guestLoginBtn');
+
+            // Dynamic Input Elements
+            const q1Container = document.getElementById('q1-container');
+            const q2Container = document.getElementById('q2-container');
+            const q3Container = document.getElementById('q3-container');
+            const addQ1Btn = document.getElementById('add-q1-btn');
+            const addQ2Btn = document.getElementById('add-q2-btn');
+            const addQ3Btn = document.getElementById('add-q3-btn');
+
+            let q1Count = 0;
+            let q2Count = 0;
+            let q3Count = 0;
+
+            // --- Function to Create Inputs ---
+            function createQ1Input() {
+                q1Count++;
+                const div = document.createElement('div');
+                div.className = 'input-set';
+                div.innerHTML = `
+                    <label class="main-label">${q1Count}.</label>
+                    <textarea class="textarea q1-input" rows="3" placeholder="กรอกคำตอบข้อ ${q1Count} ที่นี่..."></textarea>
+                `;
+                q1Container.appendChild(div);
+            }
+
+            function createQ2Input() {
+                q2Count++;
+                const div = document.createElement('div');
+                div.className = 'input-set q2-set';
+                div.innerHTML = `
+                    <label class="main-label">${q2Count}. ระบุหน้าที่หลักของฝ่ายอำนวยการ</label>
+                    <textarea class="textarea q2-main" rows="3" placeholder="ระบุหน้าที่หลัก..."></textarea>
+                    
+                    <label class="sub-label">${q2Count}.1 ระบุคำอธิบายที่เกี่ยวข้องเพิ่มเติม</label>
+                    <textarea class="textarea q2-sub1" rows="2" placeholder="ระบุคำอธิบาย..."></textarea>
+                    
+                    <label class="sub-label">${q2Count}.2 ระบุคำอธิบายที่เกี่ยวข้องเพิ่มเติม</label>
+                    <textarea class="textarea q2-sub2" rows="2" placeholder="ระบุคำอธิบาย..."></textarea>
+                `;
+                q2Container.appendChild(div);
+            }
+
+            function createQ3Input() {
+                q3Count++;
+                const div = document.createElement('div');
+                div.className = 'input-set q3-set';
+                div.innerHTML = `
+                    <label class="main-label">${q3Count}. ระบุสถานการณ์ทางทหารที่มีความเกี่ยวข้องกับฝ่ายอำนวยการนี้</label>
+                    <textarea class="textarea q3-main" rows="3" placeholder="ระบุสถานการณ์..."></textarea>
+                    
+                    <label class="sub-label">${q3Count}.1 ระบุหน้าที่หลักของฝ่ายอำนวยการนี้ ที่มีความเหมาะสมต่อการปฏิบัติการตอบโต้</label>
+                    <textarea class="textarea q3-sub1" rows="2" placeholder="ระบุหน้าที่หลัก..."></textarea>
+                    
+                    <label class="sub-label">${q3Count}.2 สร้างแนวทางปฏิบัติการฝ่ายอำนวยการเพื่อตอบโต้กับสถานการณ์ทางทหารข้างต้น</label>
+                    <textarea class="textarea q3-sub2" rows="2" placeholder="สร้างแนวทาง..."></textarea>
+                `;
+                q3Container.appendChild(div);
+            }
+
+            // --- Add Button Listeners ---
+            addQ1Btn.addEventListener('click', createQ1Input);
+            addQ2Btn.addEventListener('click', createQ2Input);
+            addQ3Btn.addEventListener('click', createQ3Input);
+
+            // --- Initialize First Inputs ---
+            // We call these when page 2 is shown or initial load, but best to do it once.
+            // But we need to reset if going back/forth or just keep them.
+            // Let's initialize once.
+            createQ1Input();
+            createQ2Input();
+            createQ3Input();
+
 
             // --- Configuration ---
             const LIFF_ID = '2008056238-g8p1R13n'; 
@@ -677,19 +789,59 @@
                 const selectedOption = participantDropdown.options[participantDropdown.selectedIndex];
                 const participantName = selectedOption ? selectedOption.textContent : 'ไม่ระบุ';
                 const selectedIndex = participantDropdown.value; 
-                const currentRow = sheetData[selectedIndex];      
                 const lesson = document.getElementById('problem-lesson').textContent;
                 
+                // Helper to gather inputs
+                const getQ1Answers = () => {
+                    let text = '';
+                    const inputs = document.querySelectorAll('.q1-input');
+                    inputs.forEach((input, index) => {
+                        const val = input.value.trim();
+                        if (val) text += `${index + 1}. ${val}\n`;
+                    });
+                    return text || '-';
+                };
+
+                const getQ2Answers = () => {
+                    let text = '';
+                    const sets = document.querySelectorAll('.q2-set');
+                    sets.forEach((set, index) => {
+                        const main = set.querySelector('.q2-main').value.trim();
+                        const sub1 = set.querySelector('.q2-sub1').value.trim();
+                        const sub2 = set.querySelector('.q2-sub2').value.trim();
+                        
+                        if (main || sub1 || sub2) {
+                            text += `${index + 1}. ${main || '-'}\n   ${index + 1}.1 ${sub1 || '-'}\n   ${index + 1}.2 ${sub2 || '-'}\n`;
+                        }
+                    });
+                    return text || '-';
+                };
+
+                const getQ3Answers = () => {
+                    let text = '';
+                    const sets = document.querySelectorAll('.q3-set');
+                    sets.forEach((set, index) => {
+                        const main = set.querySelector('.q3-main').value.trim();
+                        const sub1 = set.querySelector('.q3-sub1').value.trim();
+                        const sub2 = set.querySelector('.q3-sub2').value.trim();
+                        
+                        if (main || sub1 || sub2) {
+                            text += `${index + 1}. ${main || '-'}\n   ${index + 1}.1 ${sub1 || '-'}\n   ${index + 1}.2 ${sub2 || '-'}\n`;
+                        }
+                    });
+                    return text || '-';
+                };
+
+                const answers = {
+                    a1: getQ1Answers(),
+                    a2: getQ2Answers(),
+                    a3: getQ3Answers(),
+                };
+
                 const questions = {
                     q1: document.getElementById('question1-label').textContent,
                     q2: document.getElementById('question2-label').textContent,
                     q3: document.getElementById('question3-label').textContent,
-                };
-
-                const answers = {
-                    a1: document.getElementById('answer1').value.trim() || '-',
-                    a2: document.getElementById('answer2').value.trim() || '-',
-                    a3: document.getElementById('answer3').value.trim() || '-',
                 };
 
                 const timestamp = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
@@ -703,13 +855,16 @@ User ID: ${lineUserId.startsWith('GUEST') ? 'Guest' : lineUserId.substring(0, 5)
 หัวข้อ: ${lesson}
 -------------------------
 1. จงระบุเจนารมณ์...
-ตอบ: ${answers.a1}
+ตอบ: 
+${answers.a1}
 
 2. ในฐานะ...
-ตอบ: ${answers.a2}
+ตอบ: 
+${answers.a2}
 
 3. จากสถานการณ์...
-ตอบ: ${answers.a3}
+ตอบ: 
+${answers.a3}
 -------------------------
 ขอบคุณที่ร่วมตอบแบบสอบถาม`;
 
